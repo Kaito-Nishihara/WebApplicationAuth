@@ -8,6 +8,8 @@ using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace WebApplicationAuth.Controllers
 {
@@ -42,9 +44,13 @@ namespace WebApplicationAuth.Controllers
             {
                 return BadRequest("Invalid email format.");
             }
-            
-            var user = new AppUser();
-            await _userManager.SetUserNameAsync(user, email);
+
+            var user = new AppUser()
+            {
+                Name = email,
+                Email = email,              
+                UserName = email,
+            };           
 
             var result = await _userManager.CreateAsync(user, registration.Password);
             if (!result.Succeeded) return BadRequest(result.Errors);
@@ -156,6 +162,42 @@ namespace WebApplicationAuth.Controllers
             if (!result.Succeeded) return Unauthorized(result.Errors);
 
             return Ok("Thank you for confirming your email.");
+        }
+
+        [HttpGet("roles")]
+        [Authorize]
+        public async Task<IActionResult> GetUserRoles()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var roleClaims = roles.Select(role => new
+            {
+                Issuer = "LOCAL AUTHORITY",
+                OriginalIssuer = "LOCAL AUTHORITY",
+                Type = ClaimTypes.Role,
+                Value = role,
+                ValueType = "http://www.w3.org/2001/XMLSchema#string"
+            });
+
+            return Ok(roleClaims);
+        }
+
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout([FromBody] object empty)
+        {
+            if (empty != null)
+            {
+                await _signInManager.SignOutAsync();
+                return Ok(new { message = "Logged out successfully" });
+            }
+
+            return Unauthorized(new { message = "Invalid request" });
         }
 
         private static async Task<InfoResponse> CreateInfoResponseAsync(AppUser user, UserManager<AppUser> userManager)

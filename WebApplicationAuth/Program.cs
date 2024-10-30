@@ -22,7 +22,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddCors(
     options => options.AddPolicy(
-        "wasm",
+        "an1",
         policy => policy.WithOrigins([builder.Configuration["BackendUrl"] ?? "https://localhost:7082", 
             builder.Configuration["FrontendUrl"] ?? "https://localhost:7133"])
             .AllowAnyMethod()
@@ -38,7 +38,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("wasm");
+app.UseCors("an1");
 app.UseAuthentication();
 app.UseAuthorization();
 
